@@ -242,7 +242,7 @@ window.TRAINING_LOG = [
   {
     date: '2026-11-23',
     day: 'A',
-    status: 'in-progress',
+    note: '捲腹機沒做（累了提早結束）。',
     exercises: [
       {
         machine: '腿推機',
@@ -261,6 +261,19 @@ window.TRAINING_LOG = [
         machine: '下拉（雙單握把）',
         sets: [
           { weight: 32, unit: 'kg', reps: [10, 10, 10] }
+        ]
+      },
+      {
+        machine: '站立式側平舉機（插銷）',
+        sets: [
+          { weight: 15, unit: 'lb', reps: [15, 14, 10] }
+        ]
+      },
+      {
+        machine: 'Cable 三頭下壓',
+        sets: [
+          { weight: 10, unit: 'lb', reps: [10] },
+          { weight: 12.5, unit: 'lb', reps: [9] }
         ]
       }
     ]
