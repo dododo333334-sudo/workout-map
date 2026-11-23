@@ -13,35 +13,58 @@
     <h1>每週訓練肌群圖</h1>
   </header>
 
-  <nav id="tabs" class="tabs" role="tablist" aria-label="選擇訓練日"></nav>
-  <p id="day-title" class="day-title"></p>
-  <p id="day-note" class="note" hidden></p>
+  <div class="sticky-bar">
+    <nav class="view-switch" role="tablist" aria-label="選擇頁面">
+      <button type="button" class="view-tab" id="view-map" role="tab" aria-selected="true" aria-controls="panel-map">肌群圖</button>
+      <button type="button" class="view-tab" id="view-log" role="tab" aria-selected="false" aria-controls="panel-log">訓練紀錄</button>
+    </nav>
+    <nav class="log-modes" id="log-modes" role="tablist" aria-label="訓練紀錄的排法" hidden>
+      <button type="button" class="view-tab" id="mode-date" role="tab" aria-selected="true" aria-controls="panel-log">依日期</button>
+      <button type="button" class="view-tab" id="mode-exercise" role="tab" aria-selected="false" aria-controls="panel-log">依動作</button>
+    </nav>
+  </div>
 
-  <section class="layout">
-    <div class="diagram-card">
-      <div class="figures">
-        <figure><svg id="fig-front"></svg><figcaption>正面</figcaption></figure>
-        <figure><svg id="fig-back"></svg><figcaption>背面</figcaption></figure>
-      </div>
-      <div class="legend">
-        <span><i class="sw p"></i>主要（深色）</span>
-        <span><i class="sw s"></i>次要（淺色）</span>
-        <span><i class="sw n"></i>未練到</span>
-      </div>
-      <p id="muscle-info" class="muscle-info" aria-live="polite"></p>
-    </div>
+  <div id="panel-map" role="tabpanel" aria-labelledby="view-map">
+    <nav id="tabs" class="tabs" role="tablist" aria-label="選擇訓練日"></nav>
+    <p id="day-title" class="day-title"></p>
+    <p id="day-note" class="note" hidden></p>
 
-    <div class="list-card">
-      <div class="list-head">
-        <p id="view-mode" class="view-mode"></p>
-        <button id="show-all" type="button" class="show-all" hidden>顯示全部</button>
+    <section class="layout">
+      <div class="diagram-card">
+        <div class="figures">
+          <figure><svg id="fig-front"></svg><figcaption>正面</figcaption></figure>
+          <figure><svg id="fig-back"></svg><figcaption>背面</figcaption></figure>
+        </div>
+        <div class="legend">
+          <span><i class="sw p"></i>主要（深色）</span>
+          <span><i class="sw s"></i>次要（淺色）</span>
+          <span><i class="sw n"></i>未練到</span>
+        </div>
+        <p id="muscle-info" class="muscle-info" aria-live="polite"></p>
       </div>
-      <ul id="exercises" class="exercises"></ul>
-      <p class="hint">點動作只看它練到的肌群，再點一次回到整天。</p>
-    </div>
-  </section>
+
+      <div class="list-card">
+        <div class="list-head">
+          <p id="view-mode" class="view-mode"></p>
+          <button id="show-all" type="button" class="show-all" hidden>顯示全部</button>
+        </div>
+        <ul id="exercises" class="exercises"></ul>
+        <p class="hint">點動作只看它練到的肌群，再點一次回到整天。</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="panel-log" role="tabpanel" aria-labelledby="view-log" hidden>
+    <h2 class="log-title">訓練紀錄</h2>
+    <p id="log-summary" class="day-title" hidden></p>
+    <p id="log-hint" class="hint" hidden></p>
+    <div id="log-root"></div>
+    <p class="hint log-how">新增一筆：打開 log.js，加在 TRAINING_LOG 的最後面。格式寫在那個檔案的最上面。</p>
+  </div>
 </main>
 <script src="data.js"></script>
 <script src="app.js"></script>
+<script src="log.js"></script>
+<script src="log-ui.js"></script>
 </body>
 </html>
