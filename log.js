@@ -277,5 +277,48 @@ window.TRAINING_LOG = [
         ]
       }
     ]
+  },
+  {
+    date: '2026-11-24',
+    day: 'B',
+    exercises: [
+      {
+        machine: '坐姿腿彎舉',
+        sets: [
+          { weight: 27.5, unit: 'kg', reps: [12, 9, 9] }
+        ]
+      },
+      {
+        machine: '坐姿划船機（插銷）',
+        sets: [
+          { weight: 70, unit: 'lb', reps: [10, 9, 9] }
+        ]
+      },
+      {
+        machine: '插銷式上斜胸推',
+        sets: [
+          { weight: 15, unit: 'lb', reps: [12, 12, 9] }
+        ]
+      },
+      {
+        machine: '蝴蝶機反向飛鳥',
+        sets: [
+          { weight: 19, unit: 'kg', reps: [13, 12, 12] }
+        ]
+      },
+      {
+        machine: 'Cable 二頭彎舉（繩索）',
+        sets: [
+          { weight: 7.5, unit: 'lb', reps: [13, 11] }
+        ]
+      },
+      {
+        machine: '髖外展機',
+        sets: [
+          { weight: 37.5, unit: 'lb', reps: [13] },
+          { weight: 35, unit: 'lb', reps: [15] }
+        ]
+      }
+    ]
   }
 ];
