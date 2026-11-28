@@ -320,5 +320,21 @@ window.TRAINING_LOG = [
         ]
       }
     ]
+  },
+  {
+    date: '2026-11-26',
+    day: 'C',
+    label: '室內步行',
+    note: '跑步機室內步行（Life Fitness），比賽前保留腿力；總消耗 277 大卡',
+    runs: [
+      {
+        machine: '跑步機步行（Life Fitness）',
+        distanceKm: 3.37,
+        time: '33:01',
+        pace: '9:48',
+        avgHr: 140,
+        zone: 'Zone 2'
+      }
+    ]
   }
 ];
