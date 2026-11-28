@@ -365,36 +365,263 @@
     });
   }
 
-  function renderByExercise(list, sessions, withYear) {
-    buildGroups(sessions).forEach(function (group) {
-      var card = el('li', 'log-card');
-      card.setAttribute('data-kind', group.kind);
-      card.setAttribute('data-machine', group.machine);
-      var head = el('div', 'log-card-head');
-      head.appendChild(el('h3', 'log-machine', group.machine));
-      head.appendChild(el('span', 'log-count', group.entries.length + ' 次'));
-      card.appendChild(head);
-      if (group.entries.length > 1) {
-        var newest = group.entries[0];
-        var latest = '最近 ' + formatDate(newest.session.date, withYear) + ' · ';
-        latest += group.kind === 'lift' ? describeSets(newest.exercise.sets) : describeRun(newest.run);
-        if (isLive(newest.session)) latest += ' · 進行中';
-        card.appendChild(el('p', 'log-latest', latest));
-      }
-      group.entries.forEach(function (entry) {
-        var row = el('div', 'hist');
-        if (group.kind === 'lift') {
-          historyHead(row, entry.session, withYear, null);
-          if (entry.exercise.note) row.appendChild(el('p', 'set-note', text(entry.exercise.note)));
-          appendSets(row, entry.exercise.sets);
-        } else {
-          var zone = entry.run.zone ? el('span', 'log-pill is-c', text(entry.run.zone)) : null;
-          historyHead(row, entry.session, withYear, zone);
-          appendRunStats(row, entry.run);
-        }
-        card.appendChild(row);
+  // 解剖順序。資料裡沒有的區不會畫出來。腿含股四頭、臀、腿後肌群。
+  var CATEGORY_ORDER = ['胸', '背', '肩', '二頭', '三頭', '腿', '小腿', '核心', '有氧'];
+
+  // 課表 primary 是最高強調（圖上深色），secondary 次之。同一級取陣列裡的第一個。
+  var MUSCLE_CATEGORY = {
+    '胸大肌': '胸',
+    '上胸': '胸',
+    '前三角': '肩',
+    '中三角': '肩',
+    '後三角': '肩',
+    '肱二頭': '二頭',
+    '肱肌': '二頭',
+    '肱三頭': '三頭',
+    '前臂': '二頭',
+    '斜方肌上部': '背',
+    '斜方肌中部': '背',
+    '斜方肌下部': '背',
+    '斜方肌中下部': '背',
+    '菱形肌': '背',
+    '大圓肌': '背',
+    '背闊肌': '背',
+    '腹直肌': '核心',
+    '腹斜肌': '核心',
+    '豎脊肌': '核心',
+    '核心（腹直肌、腹斜肌、豎脊肌）': '核心',
+    '臀大肌': '腿',
+    '臀中肌、臀小肌': '腿',
+    '股四頭': '腿',
+    '內收肌': '腿',
+    '腿後肌群': '腿',
+    '小腿腓腸肌': '小腿'
+  };
+
+  function normName(value) {
+    return text(value).toLowerCase().replace(/\s+/g, '');
+  }
+
+  function programExercises() {
+    var list = [];
+    arr(window.DAYS).forEach(function (day) {
+      arr(day && day.exercises).forEach(function (exercise) {
+        if (exercise && exercise.name) list.push(exercise);
       });
-      list.appendChild(card);
+    });
+    return list;
+  }
+
+  function leadMuscle(exercise) {
+    var primary = arr(exercise.primary).filter(function (muscle) { return text(muscle).trim(); });
+    if (primary.length) return text(primary[0]).trim();
+    var secondary = arr(exercise.secondary).filter(function (muscle) { return text(muscle).trim(); });
+    return secondary.length ? text(secondary[0]).trim() : '';
+  }
+
+  function categoryOfMuscle(muscle) {
+    return MUSCLE_CATEGORY[muscle] || '';
+  }
+
+  function containedProgram(machine) {
+    var name = normName(machine);
+    var best = null;
+    var bestLen = 0;
+    programExercises().forEach(function (exercise) {
+      var program = normName(exercise.name);
+      if (program.length < 2) return;
+      if (name.indexOf(program) >= 0 || program.indexOf(name) >= 0) {
+        if (program.length > bestLen) {
+          best = exercise;
+          bestLen = program.length;
+        }
+      }
+    });
+    return best;
+  }
+
+  function longestShared(machine) {
+    var name = normName(machine);
+    var best = null;
+    var bestLen = 0;
+    programExercises().forEach(function (exercise) {
+      var program = normName(exercise.name);
+      var limit = Math.min(name.length, program.length);
+      for (var len = limit; len >= 4; len--) {
+        if (len <= bestLen) break;
+        for (var i = 0; i + len <= program.length; i++) {
+          if (name.indexOf(program.slice(i, i + len)) >= 0) {
+            best = exercise;
+            bestLen = len;
+            return;
+          }
+        }
+      }
+    });
+    return best;
+  }
+
+  function muscleNamedIn(machine) {
+    var name = text(machine);
+    var best = '';
+    Object.keys(MUSCLE_CATEGORY).forEach(function (muscle) {
+      if (name.indexOf(muscle) >= 0 && muscle.length > best.length) best = muscle;
+    });
+    return best;
+  }
+
+  // 紀錄裡沒有 primary。對不上課表動作時，用名稱對到強調最高的那條肌群。
+  function inferredMuscle(machine) {
+    var name = text(machine);
+    if (name.indexOf('三頭') >= 0) return '肱三頭';
+    if (name.indexOf('二頭') >= 0) return '肱二頭';
+    if (name.indexOf('下拉') >= 0 || name.indexOf('划船') >= 0 || /row/i.test(name)) return '背闊肌';
+    if (name.indexOf('肩') >= 0) return '前三角';
+    if (name.indexOf('上胸') >= 0 || name.indexOf('胸') >= 0) return '上胸';
+    if (name.indexOf('小腿') >= 0) return '小腿腓腸肌';
+    if (name.indexOf('臀') >= 0 || name.indexOf('髖') >= 0) return '臀中肌、臀小肌';
+    if (name.indexOf('腿後') >= 0 || name.indexOf('腿彎') >= 0) return '腿後肌群';
+    if (name.indexOf('腿') >= 0) return '股四頭';
+    if (name.indexOf('腹') >= 0 || name.indexOf('核心') >= 0) return '腹直肌';
+    return '';
+  }
+
+  function categoryFor(group) {
+    if (group.kind === 'run') return '有氧';
+    var program = containedProgram(group.machine) || longestShared(group.machine);
+    var muscle = program ? leadMuscle(program) : '';
+    if (!muscle) muscle = muscleNamedIn(group.machine);
+    if (!muscle) muscle = inferredMuscle(group.machine);
+    return categoryOfMuscle(muscle) || '其他';
+  }
+
+  function bucketByMuscle(groups) {
+    var buckets = {};
+    groups.forEach(function (group) {
+      var label = categoryFor(group);
+      if (!buckets[label]) buckets[label] = [];
+      buckets[label].push(group);
+    });
+    var order = CATEGORY_ORDER.slice();
+    Object.keys(buckets).forEach(function (label) {
+      if (order.indexOf(label) < 0) order.push(label);
+    });
+    var sections = [];
+    order.forEach(function (label) {
+      if (buckets[label]) sections.push({ label: label, groups: buckets[label] });
+    });
+    return sections;
+  }
+
+  function exerciseCard(group, withYear) {
+    var card = el('li', 'log-card');
+    card.setAttribute('data-kind', group.kind);
+    card.setAttribute('data-machine', group.machine);
+    var head = el('div', 'log-card-head');
+    head.appendChild(el('h3', 'log-machine', group.machine));
+    head.appendChild(el('span', 'log-count', group.entries.length + ' 次'));
+    card.appendChild(head);
+    if (group.entries.length > 1) {
+      var newest = group.entries[0];
+      var latest = '最近 ' + formatDate(newest.session.date, withYear) + ' · ';
+      latest += group.kind === 'lift' ? describeSets(newest.exercise.sets) : describeRun(newest.run);
+      if (isLive(newest.session)) latest += ' · 進行中';
+      card.appendChild(el('p', 'log-latest', latest));
+    }
+    group.entries.forEach(function (entry) {
+      var row = el('div', 'hist');
+      if (group.kind === 'lift') {
+        historyHead(row, entry.session, withYear, null);
+        if (entry.exercise.note) row.appendChild(el('p', 'set-note', text(entry.exercise.note)));
+        appendSets(row, entry.exercise.sets);
+      } else {
+        var zone = entry.run.zone ? el('span', 'log-pill is-c', text(entry.run.zone)) : null;
+        historyHead(row, entry.session, withYear, zone);
+        appendRunStats(row, entry.run);
+      }
+      card.appendChild(row);
+    });
+    return card;
+  }
+
+  var SECTION_KEY = 'workout-map.log-sections';
+
+  function readSectionState() {
+    try {
+      var raw = localStorage.getItem(SECTION_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function rememberSection(label, open) {
+    try {
+      var state = readSectionState();
+      state[label] = !!open;
+      localStorage.setItem(SECTION_KEY, JSON.stringify(state));
+    } catch (err) {}
+  }
+
+  function sectionIsOpen(label) {
+    return readSectionState()[label] === true;
+  }
+
+  function setSectionOpen(item, open) {
+    var button = item.querySelector('.log-section-toggle');
+    var panel = item.querySelector('.log-section-panel');
+    item.classList.toggle('is-open', open);
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) panel.removeAttribute('inert');
+    else panel.setAttribute('inert', '');
+  }
+
+  function sectionBlock(section, index, open, withYear) {
+    var item = el('li', 'log-section' + (open ? ' is-open' : ''));
+    var panelId = 'log-section-' + index;
+    var button = el('button', 'log-section-toggle');
+    button.type = 'button';
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    button.setAttribute('aria-controls', panelId);
+    button.appendChild(el('span', 'log-section-label', section.label + ' · ' + section.groups.length));
+    var chevron = el('span', 'log-chevron');
+    chevron.setAttribute('aria-hidden', 'true');
+    button.appendChild(chevron);
+    var heading = el('h3', 'log-section-head');
+    heading.appendChild(button);
+    item.appendChild(heading);
+
+    var panel = el('div', 'log-section-panel');
+    panel.id = panelId;
+    if (!open) panel.setAttribute('inert', '');
+    var inner = el('ul', 'log-list');
+    section.groups.forEach(function (group) {
+      inner.appendChild(exerciseCard(group, withYear));
+    });
+    panel.appendChild(inner);
+    item.appendChild(panel);
+
+    button.addEventListener('click', function () {
+      var next = button.getAttribute('aria-expanded') !== 'true';
+      setSectionOpen(item, next);
+      rememberSection(section.label, next);
+    });
+    return item;
+  }
+
+  function renderByExercise(list, sessions, withYear) {
+    var jump = nav.scrollTo;
+    bucketByMuscle(buildGroups(sessions)).forEach(function (section, index) {
+      var open = sectionIsOpen(section.label);
+      if (jump && section.groups.some(function (group) {
+        return group.kind === jump.kind && group.machine === jump.machine;
+      })) {
+        open = true;
+        rememberSection(section.label, true);
+      }
+      list.appendChild(sectionBlock(section, index, open, withYear));
     });
   }
 
@@ -405,8 +632,8 @@
       summary.textContent = '';
       hint.textContent = '';
     } else if (route.mode === 'exercise') {
-      summary.textContent = '共 ' + buildGroups(sessions).length + ' 項 · 同一台機器的最新一次在最上面';
-      hint.textContent = '一台機器一條。名稱要完全一樣才會排在一起，不同機器不會合併。';
+      summary.textContent = '共 ' + buildGroups(sessions).length + ' 項 · 依主要肌群 · 同一台機器的最新一次在最上面';
+      hint.textContent = '依主要肌群排列，點列展開。一台機器一條，名稱要完全一樣才會排在一起。';
     } else {
       var newest = sessions[0].date;
       var oldest = sessions[sessions.length - 1].date;

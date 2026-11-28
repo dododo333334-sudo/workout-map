@@ -119,13 +119,71 @@ figcaption { font-size: .85rem; color: var(--muted); margin-top: 2px; }
   color: var(--primary);
   box-shadow: 0 1px 3px rgba(0,0,0,.12);
 }
-.view-tab:focus-visible, .history-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.view-tab:focus-visible, .history-btn:focus-visible, .log-section-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 .log-title { font-size: 1.2rem; margin: 2px 0 4px; }
 #log-summary { margin: 0 0 4px; }
 #log-hint { margin: 0 0 12px; }
 .log-how { margin-top: 14px; }
 .log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.log-section { display: block; }
+.log-section-head { margin: 0; font-size: inherit; font-weight: inherit; }
+.log-section-toggle {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 16px;
+  border-left: 3px solid var(--primary);
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.log-section-toggle:active { background: #fdf1ef; }
+.log-section-label { min-width: 0; }
+.log-chevron {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform .22s ease;
+}
+.log-section.is-open .log-chevron { transform: rotate(45deg); }
+.log-section-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .22s ease;
+}
+.log-section.is-open .log-section-panel { grid-template-rows: 1fr; }
+.log-section-panel > .log-list {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 2px;
+  transition: padding .22s ease;
+}
+.log-section.is-open .log-section-panel > .log-list { padding: 8px 2px 2px; }
+@media (min-width: 720px) {
+  .log-section-panel > .log-list { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-section-panel,
+  .log-section-panel > .log-list,
+  .log-chevron { transition: none; }
+}
 .log-card {
   background: var(--card);
   border-radius: 16px;
