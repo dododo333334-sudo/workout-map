@@ -126,6 +126,15 @@ figcaption { font-size: .85rem; color: var(--muted); margin-top: 2px; }
 #log-hint { margin: 0 0 12px; }
 .log-how { margin-top: 14px; }
 .log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.log-section { display: grid; gap: 8px; }
+.log-section-title {
+  margin: 0 2px;
+  padding-left: 10px;
+  border-left: 3px solid var(--primary);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
 .log-card {
   background: var(--card);
   border-radius: 16px;
