@@ -544,16 +544,84 @@
     return card;
   }
 
+  var SECTION_KEY = 'workout-map.log-sections';
+
+  function readSectionState() {
+    try {
+      var raw = localStorage.getItem(SECTION_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function rememberSection(label, open) {
+    try {
+      var state = readSectionState();
+      state[label] = !!open;
+      localStorage.setItem(SECTION_KEY, JSON.stringify(state));
+    } catch (err) {}
+  }
+
+  function sectionIsOpen(label) {
+    return readSectionState()[label] === true;
+  }
+
+  function setSectionOpen(item, open) {
+    var button = item.querySelector('.log-section-toggle');
+    var panel = item.querySelector('.log-section-panel');
+    item.classList.toggle('is-open', open);
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) panel.removeAttribute('inert');
+    else panel.setAttribute('inert', '');
+  }
+
+  function sectionBlock(section, index, open, withYear) {
+    var item = el('li', 'log-section' + (open ? ' is-open' : ''));
+    var panelId = 'log-section-' + index;
+    var button = el('button', 'log-section-toggle');
+    button.type = 'button';
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    button.setAttribute('aria-controls', panelId);
+    button.appendChild(el('span', 'log-section-label', section.label + ' · ' + section.groups.length));
+    var chevron = el('span', 'log-chevron');
+    chevron.setAttribute('aria-hidden', 'true');
+    button.appendChild(chevron);
+    var heading = el('h3', 'log-section-head');
+    heading.appendChild(button);
+    item.appendChild(heading);
+
+    var panel = el('div', 'log-section-panel');
+    panel.id = panelId;
+    if (!open) panel.setAttribute('inert', '');
+    var inner = el('ul', 'log-list');
+    section.groups.forEach(function (group) {
+      inner.appendChild(exerciseCard(group, withYear));
+    });
+    panel.appendChild(inner);
+    item.appendChild(panel);
+
+    button.addEventListener('click', function () {
+      var next = button.getAttribute('aria-expanded') !== 'true';
+      setSectionOpen(item, next);
+      rememberSection(section.label, next);
+    });
+    return item;
+  }
+
   function renderByExercise(list, sessions, withYear) {
-    bucketByMuscle(buildGroups(sessions)).forEach(function (section) {
-      var item = el('li', 'log-section');
-      item.appendChild(el('h3', 'log-section-title', section.label));
-      var inner = el('ul', 'log-list');
-      section.groups.forEach(function (group) {
-        inner.appendChild(exerciseCard(group, withYear));
-      });
-      item.appendChild(inner);
-      list.appendChild(item);
+    var jump = nav.scrollTo;
+    bucketByMuscle(buildGroups(sessions)).forEach(function (section, index) {
+      var open = sectionIsOpen(section.label);
+      if (jump && section.groups.some(function (group) {
+        return group.kind === jump.kind && group.machine === jump.machine;
+      })) {
+        open = true;
+        rememberSection(section.label, true);
+      }
+      list.appendChild(sectionBlock(section, index, open, withYear));
     });
   }
 
@@ -565,7 +633,7 @@
       hint.textContent = '';
     } else if (route.mode === 'exercise') {
       summary.textContent = '共 ' + buildGroups(sessions).length + ' 項 · 依主要肌群 · 同一台機器的最新一次在最上面';
-      hint.textContent = '依主要肌群排列。一台機器一條，名稱要完全一樣才會排在一起。';
+      hint.textContent = '依主要肌群排列，點列展開。一台機器一條，名稱要完全一樣才會排在一起。';
     } else {
       var newest = sessions[0].date;
       var oldest = sessions[sessions.length - 1].date;
